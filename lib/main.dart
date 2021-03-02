@@ -66,7 +66,7 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            LineChart(
+            HiLineChart(
               data: lineData,
               height: 300,
             ),

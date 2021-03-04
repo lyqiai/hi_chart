@@ -180,8 +180,10 @@ class _HiCoordinatePainter extends CustomPainter {
     canvas.scale(1, -1);
     canvas.translate(0, -size.height + constant.xLabelHeight);
 
-    drawAxis(canvas, size);
-    drawAxisLabel(canvas, size);
+    final axisSize = Size(size.width, size.height - constant.xLabelHeight);
+
+    drawAxis(canvas, axisSize);
+    drawAxisLabel(canvas, axisSize);
 
     canvas.restore();
   }

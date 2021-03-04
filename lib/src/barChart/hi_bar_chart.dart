@@ -87,23 +87,25 @@ class _HiBarChart extends State<HiBarChart> with TickerProviderStateMixin {
           overflow: Overflow.visible,
           children: [
             Positioned.fill(
-              child: CustomPaint(
-                key: contentKey,
-                willChange: true,
-                painter: _HiBarChartPaint(
-                  context: context,
-                  data: widget.data,
-                  translateX: translateX,
-                  cormax: cormax,
-                  cormin: cormin,
-                  lineColor: widget.lineColor,
-                  lineWidth: widget.lineWidth,
-                  onRectsChanged: (rects) {
-                    this.rects = rects;
-                  },
-                  progress: initAnimationController.value,
-                  changeList: changeList,
-                  changeProgress: changeAnimationController.value,
+              child: Container(
+                child: CustomPaint(
+                  key: contentKey,
+                  willChange: true,
+                  painter: _HiBarChartPaint(
+                    context: context,
+                    data: widget.data,
+                    translateX: translateX,
+                    cormax: cormax,
+                    cormin: cormin,
+                    lineColor: widget.lineColor,
+                    lineWidth: widget.lineWidth,
+                    onRectsChanged: (rects) {
+                      this.rects = rects;
+                    },
+                    progress: initAnimationController.value,
+                    changeList: changeList,
+                    changeProgress: changeAnimationController.value,
+                  ),
                 ),
               ),
             ),
@@ -288,8 +290,6 @@ class _HiBarChartPaint extends CustomPainter {
     for (final item in data) {
       final index = data.indexOf(item);
 
-      final center = Offset((index + 1) * constant.pointSpace + constant.pointSpace / 2 + translateX, 0);
-
       double height = size.height * item.value / (cormax - cormin) * progress;
 
       final finder = changeList?.firstWhere((element) => (element.index == index), orElse: () => null);
@@ -299,7 +299,7 @@ class _HiBarChartPaint extends CustomPainter {
         height = oldHeight + (height - oldHeight) * changeProgress;
       }
 
-      Rect rect = Rect.fromCenter(center: center, width: constant.pointSpace / 2, height: height);
+      Rect rect = Rect.fromLTWH((index + 1) * constant.pointSpace + constant.pointSpace / 2 + translateX, 0, constant.pointSpace / 2, height);
 
       canvas.drawRect(rect, _barPaint);
 

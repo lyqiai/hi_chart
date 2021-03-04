@@ -4,6 +4,8 @@ import 'package:hi_chart/src/bean/chart_bean.dart';
 import 'package:hi_chart/src/lineChart/hi_line_chart.dart';
 import 'dart:math' as math;
 
+import 'src/pieChart/hi_pie_chart.dart';
+
 void main() {
   runApp(MyApp());
 }
@@ -45,7 +47,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     List<ChartBean> lineData = [
-      ChartBean('river', 120),
+      ChartBean('river', 125),
       ChartBean('mike', value),
       ChartBean('nini', 36),
       ChartBean('iko', 33),
@@ -62,14 +64,16 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: Container(
-        padding: EdgeInsets.all(20),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 15),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            HiLineChart(
-              data: lineData,
-              height: 300,
+            Container(
+              margin: EdgeInsets.only(top: 30),
+              child: HiLineChart(
+                data: lineData,
+                height: 300,
+              ),
             ),
             Container(
               margin: EdgeInsets.only(top: 30),
@@ -77,6 +81,10 @@ class _MyHomePageState extends State<MyHomePage> {
                 data: lineData,
                 height: 300,
               ),
+            ),
+            Container(
+              margin: EdgeInsets.only(top: 30),
+              child: HiPieChart(),
             ),
           ],
         ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:hi_chart/src/barChart/hi_bar_chart.dart';
 import 'package:hi_chart/src/bean/chart_bean.dart';
-import 'package:hi_chart/src/lineChart/line_chart.dart';
+import 'package:hi_chart/src/lineChart/hi_line_chart.dart';
 import 'dart:math' as math;
 
 void main() {
@@ -69,6 +70,13 @@ class _MyHomePageState extends State<MyHomePage> {
             HiLineChart(
               data: lineData,
               height: 300,
+            ),
+            Container(
+              margin: EdgeInsets.only(top: 30),
+              child: HiBarChart(
+                data: lineData,
+                height: 300,
+              ),
             ),
           ],
         ),

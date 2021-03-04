@@ -4,11 +4,10 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:hi_chart/src/bean/chart_bean.dart';
 import 'package:hi_chart/src/constant.dart' as constant;
-import 'package:hi_chart/src/util/path_util.dart';
 import 'package:hi_chart/src/util/util.dart';
-import 'package:hi_chart/src/widget/coordinate.dart';
+import 'package:hi_chart/src/widget/hi_coordinate.dart';
 
-class HiLineChart extends StatefulWidget {
+class HiBarChart extends StatefulWidget {
   final List<ChartBean> data; //数据集
   final double width; //宽度
   final double height; //高度
@@ -18,7 +17,7 @@ class HiLineChart extends StatefulWidget {
   final double axisWidth; // 坐标轴宽度
   final double lineWidth; //线宽度
 
-  const HiLineChart({
+  const HiBarChart({
     @required this.data,
     this.width = double.infinity,
     this.height,
@@ -31,11 +30,11 @@ class HiLineChart extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _LineChartState createState() => _LineChartState();
+  _HiBarChart createState() => _HiBarChart();
 }
 
-class _LineChartState extends State<HiLineChart> with TickerProviderStateMixin {
-  List<Offset> points = []; //点集合
+class _HiBarChart extends State<HiBarChart> with TickerProviderStateMixin {
+  List<Rect> rects = []; //点集合
 
   String tipTitle; //提示标题
   String tipValue; //提示数据值
@@ -85,12 +84,13 @@ class _LineChartState extends State<HiLineChart> with TickerProviderStateMixin {
       builder: (context, cormax, cormin, translateX) => GestureDetector(
         onTapUp: _onTapUp,
         child: Stack(
+          overflow: Overflow.visible,
           children: [
             Positioned.fill(
               child: CustomPaint(
                 key: contentKey,
                 willChange: true,
-                painter: _LineChartPaint(
+                painter: _HiBarChartPaint(
                   context: context,
                   data: widget.data,
                   translateX: translateX,
@@ -98,8 +98,8 @@ class _LineChartState extends State<HiLineChart> with TickerProviderStateMixin {
                   cormin: cormin,
                   lineColor: widget.lineColor,
                   lineWidth: widget.lineWidth,
-                  onPointsChanged: (points) {
-                    this.points = points;
+                  onRectsChanged: (rects) {
+                    this.rects = rects;
                   },
                   progress: initAnimationController.value,
                   changeList: changeList,
@@ -148,10 +148,10 @@ class _LineChartState extends State<HiLineChart> with TickerProviderStateMixin {
     final transerPosition = Offset(localPosition.dx, height - localPosition.dy);
 
     //是否点击到了点
-    final finder = points?.firstWhere((point) => Rect.fromCenter(center: transerPosition, width: 8, height: 8).contains(point), orElse: () => null);
+    final finder = rects?.firstWhere((rect) => rect.contains(transerPosition), orElse: () => null);
 
     if (finder != null) {
-      final index = points.indexOf(finder);
+      final index = rects.indexOf(finder);
       tipTitle = widget.data[index].title;
       tipValue = widget.data[index].value.toString();
 
@@ -198,7 +198,7 @@ class _LineChartState extends State<HiLineChart> with TickerProviderStateMixin {
   }
 
   @override
-  void didUpdateWidget(covariant HiLineChart oldWidget) {
+  void didUpdateWidget(covariant HiBarChart oldWidget) {
     super.didUpdateWidget(oldWidget);
 
     //更新数据集
@@ -219,14 +219,14 @@ class _LineChartState extends State<HiLineChart> with TickerProviderStateMixin {
   }
 }
 
-class _LineChartPaint extends CustomPainter {
+class _HiBarChartPaint extends CustomPainter {
   final List<ChartBean> data;
   final BuildContext context;
 
   final Color lineColor;
   final lineWidth;
 
-  final ValueChanged<List<Offset>> onPointsChanged;
+  final ValueChanged<List<Rect>> onRectsChanged;
   final double translateX;
 
   final int cormax, cormin;
@@ -235,14 +235,13 @@ class _LineChartPaint extends CustomPainter {
   final double changeProgress; //数据集变更动画进度
   final List<DiffValue> changeList;
 
-  Paint _pointPaint; //点画笔
-  Paint _linePaint; //线画笔
+  Paint _barPaint;
 
-  _LineChartPaint({
+  _HiBarChartPaint({
     @required this.context,
     @required this.data,
     this.translateX = 0,
-    this.onPointsChanged,
+    this.onRectsChanged,
     this.lineWidth,
     this.lineColor,
     this.cormin,
@@ -255,16 +254,10 @@ class _LineChartPaint extends CustomPainter {
   }
 
   init() {
-    _pointPaint = Paint()
+    _barPaint = Paint()
       ..color = lineColor ?? Theme.of(context).primaryColor
       ..strokeWidth = lineWidth + 4
       ..style = PaintingStyle.fill
-      ..strokeCap = StrokeCap.round;
-
-    _linePaint = Paint()
-      ..color = lineColor ?? Theme.of(context).primaryColor
-      ..strokeWidth = lineWidth
-      ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
   }
 
@@ -275,7 +268,7 @@ class _LineChartPaint extends CustomPainter {
     canvas.scale(1, -1);
     canvas.translate(0, -size.height);
 
-    _drawPoint(canvas, size);
+    _drawBar(canvas, size);
 
     canvas.restore();
   }
@@ -286,44 +279,37 @@ class _LineChartPaint extends CustomPainter {
   }
 
   //绘制点和线
-  void _drawPoint(Canvas canvas, Size size) {
+  void _drawBar(Canvas canvas, Size size) {
     canvas.save();
     canvas.clipRect(Rect.fromLTWH(constant.pointSpace / 2, 0, size.width - constant.pointSpace / 2, size.height));
 
-    List<Offset> points = [];
-    Path path = Path();
+    List<Rect> rects = [];
 
     for (final item in data) {
       final index = data.indexOf(item);
-      final value = item.value;
-      double y = size.height * (value / (cormax - cormin)) - _pointPaint.strokeWidth / 2;
-      final x = (index + 1) * constant.pointSpace + (constant.pointSpace - _pointPaint.strokeWidth) / 2;
 
-      final finder = changeList?.firstWhere((item) => item.index == index, orElse: () => null);
+      final center = Offset((index + 1) * constant.pointSpace + constant.pointSpace / 2 + translateX, 0);
+
+      double height = size.height * item.value / (cormax - cormin) * progress;
+
+      final finder = changeList?.firstWhere((element) => (element.index == index), orElse: () => null);
+
       if (finder != null) {
-        double oldY = size.height * (finder.value / (cormax - cormin)) - _pointPaint.strokeWidth / 2;
-        y = oldY + (y - oldY) * changeProgress;
+        final oldHeight = size.height * finder.value / (cormax - cormin) * progress;
+        height = oldHeight + (height - oldHeight) * changeProgress;
       }
 
-      final point = Offset(x + translateX, y);
+      Rect rect = Rect.fromCenter(center: center, width: constant.pointSpace / 2, height: height);
 
-      points.add(point);
+      canvas.drawRect(rect, _barPaint);
 
-      if (index == 0) {
-        path.moveTo(x + translateX, y);
-      } else {
-        path.lineTo(x + translateX, y);
-      }
+      rects.add(rect);
     }
-
-    if (onPointsChanged != null) {
-      onPointsChanged(points);
-    }
-
-    canvas.drawPoints(PointMode.points, points, _pointPaint);
-
-    canvas.drawPath(PathUtil.createAnimatedPath(path, progress), _linePaint);
 
     canvas.restore();
+
+    if (onRectsChanged != null) {
+      onRectsChanged(rects);
+    }
   }
 }
